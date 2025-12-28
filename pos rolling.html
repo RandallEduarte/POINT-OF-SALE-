@@ -1,0 +1,2399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0b1220" />
+<title>POS Mobile Pro • App-Ready</title>
+
+<!-- Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<!-- Camera barcode scanner -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+  :root{
+    --bg0:#060a14; --bg1:#0b1220;
+    --panel: rgba(255,255,255,.06); --panel2: rgba(255,255,255,.035);
+    --stroke: rgba(255,255,255,.10);
+    --text:#eaf1ff; --muted:#9fb0d0; --muted2:#7f92b8;
+    --brand:#4ea0ff; --brand2:#2f7dff;
+    --ok:#22c55e; --warn:#fbbf24; --danger:#ff4d4f;
+    --shadow: 0 18px 55px rgba(0,0,0,.55); --shadow2: 0 10px 25px rgba(0,0,0,.35);
+    --radius: 20px;
+    --h: 58px; --navh: 92px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    color:var(--text);
+    background:
+      radial-gradient(900px 650px at 15% -10%, rgba(78,160,255,.25) 0%, rgba(78,160,255,0) 55%),
+      radial-gradient(900px 650px at 85% 0%, rgba(34,197,94,.14) 0%, rgba(34,197,94,0) 55%),
+      linear-gradient(180deg, var(--bg1), var(--bg0));
+  }
+  .app{min-height:100vh; padding-top: env(safe-area-inset-top); padding-bottom: calc(env(safe-area-inset-bottom) + var(--navh));}
+  header{
+    position:sticky; top:0; z-index:30;
+    height: var(--h);
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 14px;
+    background: linear-gradient(180deg, rgba(11,18,32,.92), rgba(11,18,32,.60));
+    border-bottom: 1px solid var(--stroke);
+    backdrop-filter: blur(12px);
+  }
+  .brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .logo{
+    width:38px; height:38px; border-radius:14px;
+    display:grid; place-items:center;
+    background: linear-gradient(135deg, rgba(78,160,255,.22), rgba(47,125,255,.10));
+    border:1px solid rgba(78,160,255,.25);
+    box-shadow: 0 10px 25px rgba(47,125,255,.18);
+    flex:0 0 auto;
+  }
+  .brandText{min-width:0}
+  .brandText .t{font-weight:950; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .brandText .s{font-size:11px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; background: rgba(255,255,255,.06); border: 1px solid var(--stroke); color:#cfe3ff; font-size:12px; box-shadow: var(--shadow2); white-space:nowrap;}
+  .dot{width:8px; height:8px; border-radius:999px; background: var(--warn); box-shadow: 0 0 0 4px rgba(251,191,36,.14);}
+  .pill.ok .dot{background:var(--ok); box-shadow: 0 0 0 4px rgba(34,197,94,.14)}
+  .pill.off .dot{background:var(--warn); box-shadow: 0 0 0 4px rgba(251,191,36,.14)}
+  .pill.none .dot{background:rgba(255,255,255,.35); box-shadow:none}
+
+  main{padding:14px; max-width:860px; margin:0 auto;}
+  .card{background: linear-gradient(180deg, var(--panel), var(--panel2)); border: 1px solid var(--stroke); border-radius: var(--radius); box-shadow: var(--shadow); padding:14px; overflow:hidden;}
+  .card + .card{margin-top:12px}
+  .sectionTop{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+  .h2{font-weight:950; font-size:16px; margin:0;}
+  .hint{margin:6px 0 0; color:var(--muted); font-size:12px; line-height:1.35;}
+  .chip{display:inline-flex; align-items:center; gap:8px; padding:7px 10px; border-radius:999px; border:1px solid var(--stroke); background: rgba(255,255,255,.05); color:#cfe3ff; font-size:12px; flex:0 0 auto;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
+  .field{flex:1; min-width:150px}
+  .label{font-size:12px; color:var(--muted); margin:0 0 6px;}
+  input, select, button, textarea{
+    width:100%; border-radius: 16px; border: 1px solid var(--stroke);
+    background: rgba(10,16,28,.58); color: var(--text); outline:none;
+    padding: 12px 12px; font-size: 15px;
+    transition: transform .08s ease, border-color .15s ease, background .15s ease;
+  }
+  input::placeholder, textarea::placeholder{color:var(--muted2)}
+  textarea{min-height:96px; resize:vertical}
+  input:focus, select:focus, textarea:focus{border-color: rgba(78,160,255,.55); box-shadow: 0 0 0 5px rgba(78,160,255,.12);}
+  button{cursor:pointer; user-select:none; -webkit-tap-highlight-color: transparent;}
+  button:active{transform: scale(.99)}
+  .btn{border:none; background: linear-gradient(135deg, var(--brand), var(--brand2)); font-weight:950; letter-spacing:.2px; box-shadow: 0 14px 28px rgba(47,125,255,.25);}
+  .btn.secondary{background: rgba(255,255,255,.08); border:1px solid var(--stroke); box-shadow:none;}
+  .btn.ok{background: rgba(34,197,94,.14); border:1px solid rgba(34,197,94,.35); box-shadow:none;}
+  .btn.warn{background: rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.35); box-shadow:none;}
+  .btn.danger{background: rgba(255,77,79,.14); border:1px solid rgba(255,77,79,.35); box-shadow:none;}
+  .btn.small{width:auto; padding:10px 12px; font-size:13px; border-radius:14px;}
+  .grid2{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+  .grid3{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px}
+
+  .seg{display:flex; gap:8px; background: rgba(255,255,255,.05); border:1px solid var(--stroke); border-radius: 18px; padding:6px;}
+  .seg button{flex:1; border:none; background: transparent; padding:10px 10px; border-radius: 14px; color: var(--muted); font-weight:950;}
+  .seg button.active{background: rgba(78,160,255,.14); border:1px solid rgba(78,160,255,.25); color:#d9eaff; box-shadow: 0 10px 20px rgba(47,125,255,.16);}
+
+  .tableWrap{margin-top:10px; border:1px solid var(--stroke); border-radius: 16px; overflow:hidden; background: rgba(255,255,255,.03);}
+  table{width:100%; border-collapse:collapse}
+  th,td{padding:10px; border-bottom:1px solid var(--stroke); font-size:13px; vertical-align:top}
+  th{background: rgba(255,255,255,.05); color:#cfe3ff; font-weight:950; text-align:left;}
+  tr:last-child td{border-bottom:none}
+  .right{text-align:right}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:12px; color:#cfe3ff}
+  .itemTitle{font-weight:950}
+  .subline{margin-top:4px; font-size:12px; color:var(--muted)}
+  .qtyCtl{display:flex; gap:8px; justify-content:flex-end; align-items:center;}
+  .qtyCtl button{width:auto; padding:8px 10px; border-radius:14px; background: rgba(255,255,255,.08); border:1px solid var(--stroke); font-weight:950;}
+  .qtyTap{
+    min-width:44px; text-align:right; display:inline-block;
+    padding:7px 10px; border-radius:14px; border:1px solid var(--stroke);
+    background: rgba(255,255,255,.05); font-weight:950; cursor:pointer;
+  }
+
+  .results{margin-top:10px; border-radius:16px; overflow:hidden; border:1px solid var(--stroke); background: rgba(255,255,255,.03);}
+  .resItem{padding:12px; display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--stroke);}
+  .resItem:first-child{border-top:none}
+  .resItem:active{background: rgba(78,160,255,.10)}
+  .resTitle{font-weight:950}
+  .resMeta{margin-top:4px; font-size:12px; color:var(--muted)}
+  .resPrice{font-size:12px; text-align:right; white-space:nowrap; color:#d9eaff}
+
+  .kpi{display:flex; justify-content:space-between; align-items:flex-end; margin-top:12px; gap:12px; padding-top:12px; border-top:1px solid var(--stroke);}
+  .kpi .big{font-size:22px; font-weight:950}
+  .kpi .small{font-size:12px; color:var(--muted)}
+
+  .nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:40;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(11,18,32,.88);
+    border-top: 1px solid var(--stroke);
+    backdrop-filter: blur(12px);
+  }
+  .nav .bar{
+    max-width:860px; margin:0 auto;
+    display:grid; grid-template-columns: repeat(5,1fr);
+    gap:8px; padding:10px 12px;
+  }
+  .nav button{
+    background: rgba(255,255,255,.04);
+    border:1px solid var(--stroke);
+    color:var(--muted);
+    padding:12px 8px;
+    border-radius: 18px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+    font-size:12px;
+    box-shadow: 0 10px 20px rgba(0,0,0,.18);
+  }
+  .nav button.active{background: rgba(78,160,255,.14); border-color: rgba(78,160,255,.25); color:#d9eaff;}
+  .ico{font-size:18px; line-height:1}
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom: calc(env(safe-area-inset-bottom) + 110px);
+    transform: translateX(-50%);
+    background: rgba(0,0,0,.82);
+    border:1px solid rgba(255,255,255,.18);
+    color:#fff;
+    padding:10px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    z-index:100;
+    max-width:min(92vw, 680px);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    display:none;
+  }
+  .toast.show{display:block}
+
+  .modal{position:fixed; inset:0; z-index:60; display:none; background: rgba(0,0,0,.82);}
+  .modal.show{display:block}
+  .scanWrap{position:absolute; inset:0; display:flex; flex-direction:column}
+  .scanTop{
+    padding: calc(env(safe-area-inset-top) + 14px) 14px 10px;
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background: linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0));
+  }
+  .scanTop .t{font-weight:950}
+  .scanBtns{display:flex; gap:10px}
+  .iconBtn{
+    width:auto; padding:10px 12px; border-radius:16px;
+    background: rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.18);
+    color:#fff; font-weight:950;
+  }
+  .scanBody{flex:1; display:flex; justify-content:center; align-items:center; position:relative}
+  #reader{width: min(720px, 100vw); max-width: 720px; border-radius: 20px; overflow:hidden; box-shadow: 0 18px 55px rgba(0,0,0,.60);}
+  .overlayBox{
+    position:absolute;
+    width: min(340px, 78vw);
+    height: min(220px, 50vw);
+    border: 2px solid rgba(78,160,255,.95);
+    border-radius: 18px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.18);
+    pointer-events:none;
+  }
+  .scanBottom{
+    padding: 12px 14px calc(env(safe-area-inset-bottom) + 14px);
+    background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
+    color:#fff;
+  }
+  .scanBottom .help{font-size:12px; color: rgba(255,255,255,.78)}
+
+  .sheet{position:fixed; inset:0; z-index:70; display:none; background: rgba(0,0,0,.72);}
+  .sheet.show{display:block}
+  .panel{
+    position:absolute; left:0; right:0; bottom:0;
+    padding:14px;
+    background: linear-gradient(180deg, rgba(15,26,48,.98), rgba(10,16,28,.98));
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow: 0 -18px 60px rgba(0,0,0,.55);
+  }
+  .panel h3{margin:0 0 10px; font-size:16px; font-weight:950}
+  .divider{height:1px; background: var(--stroke); margin:12px 0}
+  .rowBtn{display:flex; gap:10px; flex-wrap:wrap}
+  .rowBtn > button{flex:1; min-width: 120px}
+
+  @media print{
+    body{background:#fff; color:#000}
+    header,.nav,.app main,.modal,.sheet,.toast{display:none !important}
+    #printReceipt{display:block !important}
+  }
+  #printReceipt{display:none; font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace; color:#000; padding:14px;}
+  #printReceipt .rTitle{font-weight:900;font-size:18px;margin-bottom:6px}
+  #printReceipt .rSub{font-size:12px;margin-bottom:6px}
+  #printReceipt .rLine{display:flex;justify-content:space-between;gap:10px;font-size:12px}
+  #printReceipt hr{border:none;border-top:1px dashed #000;margin:8px 0}
+  #printReceipt table{width:100%;border-collapse:collapse;margin-top:6px}
+  #printReceipt td{font-size:12px;padding:3px 0; vertical-align:top}
+  #printReceipt .right{text-align:right}
+  #printReceipt .bc{font-size:11px; margin-top:2px}
+  .miniNote{font-size:12px; color: var(--muted); margin-top:6px;}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">🧾</div>
+      <div class="brandText">
+        <div class="t">POS Mobile Pro</div>
+        <div class="s">Products + Clients Excel • Barcode scan • Offline-ready</div>
+      </div>
+    </div>
+    <div class="pill none" id="statusPill"><span class="dot"></span><span id="statusText">No products</span></div>
+  </header>
+
+  <main>
+    <!-- IMPORT -->
+    <section id="view-import" class="card">
+      <div class="sectionTop">
+        <div>
+          <p class="h2">Import / Products</p>
+          <p class="hint">
+            Supports: <b>Barcode/ID</b> + <b>ITEM DESCRIPTION</b> + <b>RETAIL</b> + <b>WHOLESALE</b>.
+            No-barcode items are still searchable by name.
+          </p>
+        </div>
+        <span class="chip" id="countChip">0 items</span>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div class="field">
+          <div class="label">Products Excel (.xlsx/.xls)</div>
+          <input type="file" id="excelFile" accept=".xlsx,.xls" />
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn secondary" id="btnLoadSaved">Load Saved Products</button>
+        <button class="btn" id="btnSaveProducts">Save Products Offline</button>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn secondary" id="btnGoPos">Go to POS</button>
+        <button class="btn" id="btnOpenScanner">Open Scanner</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row" style="gap:8px">
+        <span class="chip" id="badgeStock">Stock: OFF</span>
+        <span class="chip" id="badgeBarcodeLock">Barcode Lock: OFF</span>
+        <span class="chip" id="badgeSounds">Sound: ON</span>
+      </div>
+
+      <p class="hint">Tip: Open once online, then add to home screen to use offline.</p>
+    </section>
+
+    <!-- POS -->
+    <section id="view-pos" class="card" style="display:none">
+      <div class="sectionTop">
+        <div>
+          <p class="h2">POS Terminal</p>
+          <p class="hint">
+            Scan → choose quantity → add • Type barcode auto-detect → quantity picker.
+            Search name for no-barcode items.
+          </p>
+        </div>
+        <button class="btn small" id="btnOpenScanner2">📷 Scan</button>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div class="field">
+          <div class="label">Client</div>
+          <select id="clientSelect"></select>
+          <div class="miniNote" id="clientHint"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Price mode</div>
+          <div class="seg" role="tablist" aria-label="Price mode">
+            <button id="segRetail" class="active" type="button">Retail</button>
+            <button id="segWholesale" type="button">Wholesale</button>
+          </div>
+        </div>
+
+        <div class="field" style="max-width:140px">
+          <div class="label">Default Qty</div>
+          <input id="qtyInput" type="number" min="1" value="1" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div class="field">
+          <div class="label">Search / Barcode Input</div>
+          <input id="codeInput" type="text" placeholder="Scan/type barcode or search by item name" inputmode="search" />
+          <div class="miniNote">Barcode entered → auto-detect match → quantity picker.</div>
+        </div>
+      </div>
+
+      <div class="grid3" style="margin-top:10px">
+        <button class="btn" id="addBtn">Add</button>
+        <button class="btn secondary" id="undoBtn">Undo</button>
+        <button class="btn danger" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="grid3" style="margin-top:10px">
+        <button class="btn secondary" id="noBarcodeBtn">No-Barcode Item</button>
+        <button class="btn secondary" id="holdBtn">Hold</button>
+        <button class="btn warn" id="discountBtn">Discount/VAT</button>
+      </div>
+
+      <div id="resultsBox" class="results" style="display:none"></div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th style="width:160px">Barcode</th>
+              <th class="right" style="width:92px">Price</th>
+              <th class="right" style="width:120px">Qty</th>
+              <th class="right" style="width:96px">Total</th>
+              <th class="right" style="width:56px">X</th>
+            </tr>
+          </thead>
+          <tbody id="cartBody"></tbody>
+        </table>
+      </div>
+
+      <div class="kpi">
+        <div>
+          <div class="small">Unique items</div>
+          <div class="big" id="cartCount">0</div>
+        </div>
+        <div style="text-align:right">
+          <div class="small">Payable</div>
+          <div class="big">₱ <span id="grandTotal">0.00</span></div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:12px">
+        <button class="btn ok" id="checkoutBtn">Checkout</button>
+        <button class="btn secondary" id="resumeBtn">Resume</button>
+      </div>
+
+      <p class="hint" id="posMeta"></p>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section id="view-products" class="card" style="display:none">
+      <div class="sectionTop">
+        <div>
+          <p class="h2">Products</p>
+          <p class="hint">Tap a product → quantity picker → add to cart.</p>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div class="field">
+          <div class="label">Quick filter</div>
+          <input id="productFilter" type="text" placeholder="Search by name or barcode" />
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn secondary" id="btnExportProducts">Export Products (CSV)</button>
+        <button class="btn danger" id="btnClearSavedProducts">Clear Saved Products</button>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th style="width:170px">Barcode</th>
+              <th class="right" style="width:90px">Retail</th>
+              <th class="right" style="width:100px">Wholesale</th>
+            </tr>
+          </thead>
+          <tbody id="productTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CLIENTS -->
+    <section id="view-clients" class="card" style="display:none">
+      <div class="sectionTop">
+        <div>
+          <p class="h2">Clients</p>
+          <p class="hint">Loads your file format: <b>ID</b>, <b>Name of Client</b>, <b>Geographical Group</b>.</p>
+        </div>
+        <span class="chip" id="clientCountChip">0 clients</span>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div class="field">
+          <div class="label">Clients Excel (.xlsx/.xls)</div>
+          <input type="file" id="clientExcelFile" accept=".xlsx,.xls" />
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn secondary" id="btnLoadSavedClients">Load Saved Clients</button>
+        <button class="btn" id="btnSaveClients">Save Clients Offline</button>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn secondary" id="btnExportClients">Export Clients (CSV)</button>
+        <button class="btn danger" id="btnClearSavedClients">Clear Saved Clients</button>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div class="field">
+          <div class="label">Search clients</div>
+          <input id="clientFilter" type="text" placeholder="Search by client name or ID or group" />
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th style="width:140px">Client ID</th>
+              <th style="width:220px">Geographical Group</th>
+              <th style="width:120px" class="right">Default</th>
+            </tr>
+          </thead>
+          <tbody id="clientTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- REPORTS -->
+    <section id="view-reports" class="card" style="display:none">
+      <div class="sectionTop">
+        <div>
+          <p class="h2">Reports & Settings</p>
+          <p class="hint">Sales history and exports saved on this phone.</p>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn secondary" id="btnExportSales">Export Sales (CSV)</button>
+        <button class="btn secondary" id="btnExportSalesDaily">Export Today (CSV)</button>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn secondary" id="btnOpenSettings">Store / Receipt Settings</button>
+        <button class="btn danger" id="btnClearSales">Clear Sales History</button>
+      </div>
+
+      <div class="results" id="salesList" style="margin-top:10px"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Bottom Navigation -->
+<div class="nav">
+  <div class="bar">
+    <button class="active" data-view="import"><div class="ico">📂</div><div>Import</div></button>
+    <button data-view="pos"><div class="ico">🛒</div><div>POS</div></button>
+    <button data-view="products"><div class="ico">📦</div><div>Products</div></button>
+    <button data-view="clients"><div class="ico">👤</div><div>Clients</div></button>
+    <button data-view="reports"><div class="ico">📊</div><div>Reports</div></button>
+  </div>
+</div>
+
+<!-- Scanner Modal -->
+<div class="modal" id="scanModal">
+  <div class="scanWrap">
+    <div class="scanTop">
+      <div>
+        <div class="t">Barcode Scanner</div>
+        <div style="font-size:12px;opacity:.85">Scan → choose quantity → add</div>
+      </div>
+      <div class="scanBtns">
+        <button class="iconBtn" id="btnTorch">🔦 Torch</button>
+        <button class="iconBtn" id="btnCloseScan">✕ Close</button>
+      </div>
+    </div>
+
+    <div class="scanBody">
+      <div id="reader"></div>
+      <div class="overlayBox"></div>
+    </div>
+
+    <div class="scanBottom">
+      <div class="help">No barcode? Close scanner and search by item name or use “No-Barcode Item”.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quantity Sheet -->
+<div class="sheet" id="qtySheet">
+  <div class="panel">
+    <h3>Choose Quantity</h3>
+    <p class="hint" id="qtyItemTitle" style="margin-top:4px"></p>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">Quantity</div>
+        <input id="qtyPick" type="number" min="1" value="1" />
+      </div>
+      <div class="field">
+        <div class="label">Quick</div>
+        <div class="grid3">
+          <button class="btn secondary" type="button" data-q="1">1</button>
+          <button class="btn secondary" type="button" data-q="5">5</button>
+          <button class="btn secondary" type="button" data-q="10">10</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="rowBtn">
+      <button class="btn ok" id="btnQtyAdd">Add</button>
+      <button class="btn secondary" id="btnQtyCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- No Barcode Item Sheet -->
+<div class="sheet" id="noBarcodeSheet">
+  <div class="panel">
+    <h3>No-Barcode Item</h3>
+    <p class="hint">For items not in Excel or items without barcode.</p>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">Item Name</div>
+        <input id="nbName" type="text" placeholder="e.g., Plastic Bag / Ice / Service" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">Price</div>
+        <input id="nbPrice" type="number" min="0" step="0.01" placeholder="0.00" />
+      </div>
+      <div class="field">
+        <div class="label">Quantity</div>
+        <input id="nbQty" type="number" min="1" value="1" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="rowBtn">
+      <button class="btn ok" id="btnNbAdd">Add to Cart</button>
+      <button class="btn secondary" id="btnNbClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Checkout Sheet -->
+<div class="sheet" id="checkoutSheet">
+  <div class="panel">
+    <h3>Checkout</h3>
+
+    <div class="row">
+      <div class="field">
+        <div class="label">Total</div>
+        <input id="chkTotal" type="text" disabled />
+      </div>
+      <div class="field">
+        <div class="label">Cash Received</div>
+        <input id="chkCash" type="number" min="0" placeholder="0.00" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">Change</div>
+        <input id="chkChange" type="text" disabled />
+      </div>
+      <div class="field">
+        <div class="label">Customer (auto from Client)</div>
+        <input id="chkCustomer" type="text" placeholder="Walk-in" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">Notes (optional)</div>
+        <input id="chkNotes" type="text" placeholder="e.g., delivery / special request" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="rowBtn">
+      <button class="btn ok" id="btnCompleteSale">Complete & Save</button>
+      <button class="btn secondary" id="btnPrint">Print Receipt</button>
+      <button class="btn danger" id="btnCloseCheckout">Close</button>
+    </div>
+
+    <p class="hint">Receipt prints the barcode under each item (no-barcode item shows “NO-BARCODE”).</p>
+  </div>
+</div>
+
+<!-- Discount/VAT Sheet -->
+<div class="sheet" id="discountSheet">
+  <div class="panel">
+    <h3>Discount & VAT</h3>
+    <div class="row">
+      <div class="field">
+        <div class="label">Discount Type</div>
+        <select id="discType">
+          <option value="none">None</option>
+          <option value="percent">Percent (%)</option>
+          <option value="fixed">Fixed Amount (₱)</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label">Discount Value</div>
+        <input id="discValue" type="number" min="0" placeholder="0" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">VAT Mode</div>
+        <select id="vatMode">
+          <option value="off">VAT Off</option>
+          <option value="add">Add VAT to Total</option>
+          <option value="included">VAT Included (for receipt)</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label">VAT Rate (%)</div>
+        <input id="vatRate" type="number" min="0" step="0.01" placeholder="12" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="rowBtn">
+      <button class="btn ok" id="btnApplyDisc">Apply</button>
+      <button class="btn secondary" id="btnResetDisc">Reset</button>
+      <button class="btn danger" id="btnCloseDisc">Close</button>
+    </div>
+
+    <p class="hint" id="discPreview"></p>
+  </div>
+</div>
+
+<!-- Settings Sheet -->
+<div class="sheet" id="settingsSheet">
+  <div class="panel">
+    <h3>Store / Receipt Settings</h3>
+
+    <div class="row">
+      <div class="field">
+        <div class="label">Store Name</div>
+        <input id="setStoreName" type="text" placeholder="Your Store Name" />
+      </div>
+      <div class="field">
+        <div class="label">Contact (optional)</div>
+        <input id="setStoreContact" type="text" placeholder="Phone / Email" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">Store Address (optional)</div>
+        <input id="setStoreAddress" type="text" placeholder="Address" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">Receipt Footer</div>
+        <textarea id="setFooter" placeholder="Thank you! Come again."></textarea>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row">
+      <div class="field">
+        <div class="label">Barcode Lock</div>
+        <select id="setBarcodeLock">
+          <option value="off">Off</option>
+          <option value="ean13">EAN-13 only</option>
+          <option value="upc12">UPC-A (12 digits) only</option>
+          <option value="digits">Digits only (min 6)</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label">Sound + Vibration</div>
+        <select id="setSounds">
+          <option value="on">On</option>
+          <option value="off">Off</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">Scan Mode</div>
+        <select id="setScanMode">
+          <option value="single">Single (auto close)</option>
+          <option value="continuous">Continuous (stay open)</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label">Default Qty (for Add button)</div>
+        <input id="setDefaultQty" type="number" min="1" value="1" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="rowBtn">
+      <button class="btn ok" id="btnSaveSettings">Save Settings</button>
+      <button class="btn secondary" id="btnCloseSettings">Close</button>
+    </div>
+
+    <p class="hint">All settings are stored offline on this device.</p>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="printReceipt"></div>
+
+<script>
+/* =============================
+   STORAGE KEYS
+============================= */
+const KEY_PRODUCTS = "pos_products_v8";
+const KEY_CLIENTS  = "pos_clients_v8";
+const KEY_SETTINGS = "pos_settings_v8";
+const KEY_SALES    = "pos_sales_v8";
+const KEY_HOLD     = "pos_hold_v8";
+
+let rows = [];
+let byBarcode = new Map();
+let cart = new Map();
+let productsRendered = false;
+let lastAction = null;
+
+let clients = [];
+let clientsRendered = false;
+let selectedClientId = "WALKIN";
+
+let disc = { type:"none", value:0 };
+let vat  = { mode:"off", rate:12 };
+
+let settings = {
+  storeName: "STORE",
+  storeAddress: "",
+  storeContact: "",
+  footer: "THANK YOU! COME AGAIN.",
+  barcodeLock: "off",
+  sounds: "on",
+  scanMode: "single",
+  defaultQty: 1
+};
+
+const statusPill = document.getElementById("statusPill");
+const statusText = document.getElementById("statusText");
+const countChip  = document.getElementById("countChip");
+const excelFile  = document.getElementById("excelFile");
+
+const viewImport   = document.getElementById("view-import");
+const viewPos      = document.getElementById("view-pos");
+const viewProducts = document.getElementById("view-products");
+const viewClients  = document.getElementById("view-clients");
+const viewReports  = document.getElementById("view-reports");
+
+const qtyInputEl  = document.getElementById("qtyInput");
+const codeInputEl = document.getElementById("codeInput");
+const resultsBox  = document.getElementById("resultsBox");
+
+const cartBody     = document.getElementById("cartBody");
+const grandTotalEl = document.getElementById("grandTotal");
+const cartCountEl  = document.getElementById("cartCount");
+const posMeta      = document.getElementById("posMeta");
+
+const productTbody  = document.getElementById("productTbody");
+const productFilter = document.getElementById("productFilter");
+
+const clientSelect  = document.getElementById("clientSelect");
+const clientHint    = document.getElementById("clientHint");
+
+const clientExcelFile = document.getElementById("clientExcelFile");
+const clientCountChip = document.getElementById("clientCountChip");
+const clientFilter    = document.getElementById("clientFilter");
+const clientTbody     = document.getElementById("clientTbody");
+
+const salesList = document.getElementById("salesList");
+
+const badgeStock = document.getElementById("badgeStock");
+const badgeBarcodeLock = document.getElementById("badgeBarcodeLock");
+const badgeSounds = document.getElementById("badgeSounds");
+
+const scanModal = document.getElementById("scanModal");
+const btnTorch  = document.getElementById("btnTorch");
+const btnCloseScan = document.getElementById("btnCloseScan");
+
+const qtySheet = document.getElementById("qtySheet");
+const qtyItemTitle = document.getElementById("qtyItemTitle");
+const qtyPick = document.getElementById("qtyPick");
+const btnQtyAdd = document.getElementById("btnQtyAdd");
+const btnQtyCancel = document.getElementById("btnQtyCancel");
+
+const noBarcodeSheet = document.getElementById("noBarcodeSheet");
+const nbName = document.getElementById("nbName");
+const nbPrice = document.getElementById("nbPrice");
+const nbQty = document.getElementById("nbQty");
+const btnNbAdd = document.getElementById("btnNbAdd");
+const btnNbClose = document.getElementById("btnNbClose");
+
+const checkoutSheet = document.getElementById("checkoutSheet");
+const chkTotal = document.getElementById("chkTotal");
+const chkCash  = document.getElementById("chkCash");
+const chkChange= document.getElementById("chkChange");
+const chkCustomer = document.getElementById("chkCustomer");
+const chkNotes = document.getElementById("chkNotes");
+
+const discountSheet = document.getElementById("discountSheet");
+const discTypeEl = document.getElementById("discType");
+const discValueEl = document.getElementById("discValue");
+const vatModeEl = document.getElementById("vatMode");
+const vatRateEl = document.getElementById("vatRate");
+const discPreview = document.getElementById("discPreview");
+
+const settingsSheet = document.getElementById("settingsSheet");
+const setStoreName = document.getElementById("setStoreName");
+const setStoreAddress = document.getElementById("setStoreAddress");
+const setStoreContact = document.getElementById("setStoreContact");
+const setFooter = document.getElementById("setFooter");
+const setBarcodeLock = document.getElementById("setBarcodeLock");
+const setSounds = document.getElementById("setSounds");
+const setScanMode = document.getElementById("setScanMode");
+const setDefaultQty = document.getElementById("setDefaultQty");
+
+const toastEl = document.getElementById("toast");
+let toastTimer = null;
+
+/* price mode */
+const segRetail = document.getElementById("segRetail");
+const segWholesale = document.getElementById("segWholesale");
+let priceMode = "Retail";
+function setPriceMode(mode){
+  priceMode = mode;
+  segRetail.classList.toggle("active", mode==="Retail");
+  segWholesale.classList.toggle("active", mode==="Wholesale");
+  renderCart();
+  updatePosMeta();
+}
+segRetail.onclick = ()=>setPriceMode("Retail");
+segWholesale.onclick = ()=>setPriceMode("Wholesale");
+
+/* =============================
+   NAV
+============================= */
+function showView(name){
+  viewImport.style.display   = (name==="import") ? "block" : "none";
+  viewPos.style.display      = (name==="pos") ? "block" : "none";
+  viewProducts.style.display = (name==="products") ? "block" : "none";
+  viewClients.style.display  = (name==="clients") ? "block" : "none";
+  viewReports.style.display  = (name==="reports") ? "block" : "none";
+
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  document.querySelector(`.nav button[data-view="${name}"]`)?.classList.add("active");
+
+  if (name === "products") renderProductsOnce();
+  if (name === "clients") renderClientsOnce();
+  if (name === "reports") renderSales();
+}
+document.querySelectorAll(".nav button").forEach(btn=>{
+  btn.addEventListener("click", ()=>showView(btn.dataset.view));
+});
+document.getElementById("btnGoPos").onclick = ()=>showView("pos");
+
+/* =============================
+   TOAST
+============================= */
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toastEl.classList.remove("show"), 1300);
+}
+
+/* =============================
+   ONLINE/OFFLINE
+============================= */
+function updateOnlineBadge(){
+  const online = navigator.onLine;
+  const base = rows.length ? `${rows.length} products` : "No products";
+  statusPill.classList.remove("ok","off","none");
+  if(!rows.length){
+    statusPill.classList.add("none");
+    statusText.textContent = base;
+    return;
+  }
+  if(online){
+    statusPill.classList.add("ok");
+    statusText.textContent = `${base} • Online`;
+  }else{
+    statusPill.classList.add("off");
+    statusText.textContent = `${base} • Offline`;
+  }
+}
+window.addEventListener("online", updateOnlineBadge);
+window.addEventListener("offline", updateOnlineBadge);
+
+/* =============================
+   SOUND/VIBRATE
+============================= */
+function canSound(){ return settings.sounds === "on"; }
+function beep(){
+  if(!canSound()) return;
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = "sine"; o.frequency.value = 880;
+    g.gain.value = 0.08;
+    o.start();
+    setTimeout(()=>{ o.stop(); ctx.close(); }, 90);
+  }catch{}
+}
+function buzz(){ if(canSound()) try{ navigator.vibrate?.(70); }catch{} }
+
+/* =============================
+   SETTINGS
+============================= */
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(KEY_SETTINGS);
+    if(raw){
+      const obj = JSON.parse(raw);
+      settings = { ...settings, ...obj };
+    }
+  }catch{}
+  qtyInputEl.value = String(settings.defaultQty || 1);
+  updateBadges();
+}
+function saveSettings(){
+  localStorage.setItem(KEY_SETTINGS, JSON.stringify(settings));
+  updateBadges();
+}
+function updateBadges(){
+  badgeStock.textContent = `Stock: OFF`;
+  badgeBarcodeLock.textContent = `Barcode Lock: ${settings.barcodeLock.toUpperCase()}`;
+  badgeSounds.textContent = `Sound: ${settings.sounds.toUpperCase()}`;
+}
+function openSettings(){
+  setStoreName.value = settings.storeName || "";
+  setStoreAddress.value = settings.storeAddress || "";
+  setStoreContact.value = settings.storeContact || "";
+  setFooter.value = settings.footer || "";
+  setBarcodeLock.value = settings.barcodeLock || "off";
+  setSounds.value = settings.sounds || "on";
+  setScanMode.value = settings.scanMode || "single";
+  setDefaultQty.value = String(settings.defaultQty || 1);
+  settingsSheet.classList.add("show");
+}
+function closeSettings(){ settingsSheet.classList.remove("show"); }
+document.getElementById("btnOpenSettings").onclick = openSettings;
+document.getElementById("btnCloseSettings").onclick = closeSettings;
+document.getElementById("btnSaveSettings").onclick = ()=>{
+  settings.storeName = (setStoreName.value || "STORE").trim();
+  settings.storeAddress = (setStoreAddress.value || "").trim();
+  settings.storeContact = (setStoreContact.value || "").trim();
+  settings.footer = (setFooter.value || "THANK YOU! COME AGAIN.").trim();
+  settings.barcodeLock = setBarcodeLock.value;
+  settings.sounds = setSounds.value;
+  settings.scanMode = setScanMode.value;
+  settings.defaultQty = Math.max(1, Math.floor(Number(setDefaultQty.value)||1));
+  qtyInputEl.value = String(settings.defaultQty);
+  saveSettings();
+  updatePosMeta();
+  renderCart();
+  closeSettings();
+  showToast("Settings saved ✅");
+};
+
+/* =============================
+   PRODUCTS SAVE/LOAD
+============================= */
+function saveProductsOffline(){
+  if(rows.length === 0) return alert("No products to save.");
+  localStorage.setItem(KEY_PRODUCTS, JSON.stringify(rows));
+  showToast("Products saved offline ✅");
+}
+function loadSavedProducts(){
+  try{
+    const raw = localStorage.getItem(KEY_PRODUCTS);
+    if(!raw) return alert("No saved products found.");
+    const list = JSON.parse(raw);
+    if(!Array.isArray(list) || !list.length) return alert("Saved products are empty.");
+    loadProductsFromArray(list, false);
+    showToast("Saved products loaded ✅");
+  }catch{
+    alert("Saved products are corrupted.");
+  }
+}
+function clearSavedProducts(){
+  if(!confirm("Clear saved products on this device?")) return;
+  localStorage.removeItem(KEY_PRODUCTS);
+  showToast("Saved products cleared");
+}
+document.getElementById("btnSaveProducts").onclick = saveProductsOffline;
+document.getElementById("btnLoadSaved").onclick = loadSavedProducts;
+document.getElementById("btnClearSavedProducts").onclick = clearSavedProducts;
+
+/* =============================
+   CLIENTS SAVE/LOAD
+============================= */
+function saveClientsOffline(){
+  localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients));
+  showToast("Clients saved offline ✅");
+}
+function loadSavedClients(){
+  try{
+    const raw = localStorage.getItem(KEY_CLIENTS);
+    if(!raw) return alert("No saved clients found.");
+    const list = JSON.parse(raw);
+    if(!Array.isArray(list)) return alert("Saved clients invalid.");
+    loadClientsFromArray(list);
+    showToast("Saved clients loaded ✅");
+  }catch{
+    alert("Saved clients are corrupted.");
+  }
+}
+function clearSavedClients(){
+  if(!confirm("Clear saved clients on this device?")) return;
+  localStorage.removeItem(KEY_CLIENTS);
+  clients = [];
+  renderClientSelect();
+  renderClients();
+  showToast("Clients cleared");
+}
+document.getElementById("btnSaveClients").onclick = saveClientsOffline;
+document.getElementById("btnLoadSavedClients").onclick = loadSavedClients;
+document.getElementById("btnClearSavedClients").onclick = clearSavedClients;
+
+/* =============================
+   EXCEL IMPORT: PRODUCTS
+============================= */
+excelFile.addEventListener("change", (e)=>{
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  productsRendered = false;
+  productTbody.innerHTML = "";
+  productFilter.value = "";
+  hideResults();
+  cart.clear(); renderCart();
+
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    const data = new Uint8Array(evt.target.result);
+    const wb = XLSX.read(data, { type:"array" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet, { defval:"" });
+
+    const list = [];
+    for(const r of json){
+      const Description = (r.Description ?? r["ITEM DESCRIPTION"] ?? r["Item Description"] ?? r["ITEM"] ?? "").toString().trim();
+      const BarcodeRaw = (r.Barcode ?? r.BARCODE ?? r.barcode ?? r["BAR CODE"] ?? r["ID"] ?? "").toString().trim();
+      const Retail = Number(r.Retail ?? r.RETAIL ?? r["SRP"] ?? 0) || 0;
+      const Wholesale = Number(r.Wholesale ?? r.WHOLESALE ?? r["WHOLESALE PRICE"] ?? 0) || 0;
+
+      let Barcode = BarcodeRaw;
+      if(!Barcode){
+        Barcode = `NB-${hash(Description || ("ITEM"+Math.random()))}`;
+      }
+      list.push({ Description, Barcode, Retail, Wholesale, _noBarcode: !BarcodeRaw });
+    }
+
+    loadProductsFromArray(list, true);
+    showToast("Products Excel loaded ✔");
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function loadProductsFromArray(list, warnDupes=false){
+  rows = [];
+  byBarcode.clear();
+
+  const dupes = new Map();
+  for(const p of list){
+    const Barcode = (p.Barcode ?? "").toString().trim();
+    if(!Barcode) continue;
+
+    const row = {
+      Description: (p.Description ?? "").toString().trim(),
+      Barcode,
+      Retail: Number(p.Retail || 0) || 0,
+      Wholesale: Number(p.Wholesale || 0) || 0,
+      _noBarcode: !!p._noBarcode || String(Barcode).startsWith("NB-")
+    };
+    rows.push(row);
+
+    if(byBarcode.has(Barcode)) dupes.set(Barcode, (dupes.get(Barcode) || 1) + 1);
+    else byBarcode.set(Barcode, row);
+  }
+
+  countChip.textContent  = `${rows.length} items`;
+  updateOnlineBadge();
+  updatePosMeta();
+
+  if(warnDupes && dupes.size){
+    const sample = Array.from(dupes.keys()).slice(0, 12).join(", ");
+    alert(`Warning: Duplicate barcodes found (${dupes.size}). Sample:\n${sample}\n\nFix duplicates to ensure ONE BARCODE per item.`);
+  } else if(rows.length === 0){
+    alert("No rows loaded. Ensure your file has Barcode/ID or Description column.");
+  }
+}
+
+/* =============================
+   EXCEL IMPORT: CLIENTS (UPDATED FOR YOUR FILE)
+   Supports your columns:
+   - ID
+   - Name of Client
+   - Geographical Group
+   Plus common alternatives.
+============================= */
+clientExcelFile.addEventListener("change", (e)=>{
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    const data = new Uint8Array(evt.target.result);
+    const wb = XLSX.read(data, { type:"array" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet, { defval:"" });
+
+    const list = [];
+    for(const r of json){
+      const id = (
+        r["CLIENT ID"] ?? r["Client ID"] ?? r.CLIENTID ?? r.ClientID ??
+        r["ID"] ?? r.Id ?? r.id ?? ""
+      ).toString().trim();
+
+      const name = (
+        r["CLIENT NAME"] ?? r["Client Name"] ??
+        r["Name of Client"] ?? r["NAME OF CLIENT"] ??
+        r.NAME ?? r.Name ?? r.CUSTOMER ?? r.Client ?? r.CLIENT ?? ""
+      ).toString().trim();
+
+      const group = (
+        r["Geographical Group"] ?? r["GEOGRAPHICAL GROUP"] ??
+        r.GROUP ?? r.Group ?? r["AREA"] ?? r.Area ?? ""
+      ).toString().trim();
+
+      const modeRaw = (
+        r["DEFAULT PRICE"] ?? r["Price Mode"] ?? r["PRICE MODE"] ?? r.MODE ?? r.Mode ?? ""
+      ).toString().trim();
+
+      if(!id && !name) continue;
+
+      let defaultMode = "Retail";
+      const m = modeRaw.toLowerCase();
+      if(m.includes("whole")) defaultMode = "Wholesale";
+      if(m.includes("retail")) defaultMode = "Retail";
+
+      list.push({
+        clientId: id || `C-${hash(name||String(Math.random()))}`,
+        clientName: name || "(No Name)",
+        group,
+        defaultMode
+      });
+    }
+
+    loadClientsFromArray(list);
+    showToast("Clients Excel loaded ✅");
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function loadClientsFromArray(list){
+  const seen = new Set();
+  clients = [];
+  for(const c of list){
+    const clientId = (c.clientId ?? c["clientId"] ?? c["CLIENT ID"] ?? c["ID"] ?? "").toString().trim();
+    const clientName = (c.clientName ?? c["clientName"] ?? c["CLIENT NAME"] ?? c["NAME"] ?? c["Name of Client"] ?? "").toString().trim();
+    const group = (c.group ?? c["group"] ?? c["Geographical Group"] ?? c["GROUP"] ?? "").toString().trim();
+
+    const key = (clientId || clientName).toLowerCase();
+    if(!key || seen.has(key)) continue;
+    seen.add(key);
+
+    let defaultMode = (c.defaultMode ?? c["defaultMode"] ?? "Retail").toString().trim();
+    defaultMode = defaultMode.toLowerCase().includes("whole") ? "Wholesale" : "Retail";
+
+    clients.push({
+      clientId: clientId || `C-${hash(clientName||String(Math.random()))}`,
+      clientName: clientName || "(No Name)",
+      group,
+      defaultMode
+    });
+  }
+
+  clientCountChip.textContent = `${clients.length} clients`;
+  clientsRendered = false;
+  renderClientSelect();
+  renderClients();
+}
+
+/* =============================
+   BARCODE LOCK
+============================= */
+function isBarcodeAllowed(text){
+  const raw = String(text || "").trim();
+  const digits = raw.replace(/\D+/g,'');
+  const lock = settings.barcodeLock;
+
+  if(lock === "off") return true;
+  if(lock === "ean13") return /^\d{13}$/.test(digits);
+  if(lock === "upc12") return /^\d{12}$/.test(digits);
+  if(lock === "digits") return /^\d{6,}$/.test(digits);
+  return true;
+}
+
+/* =============================
+   MATCHING
+============================= */
+function normalize(s){
+  const raw = (s ?? "").toString().trim();
+  const low = raw.toLowerCase();
+  const digits = raw.replace(/\D+/g,'');
+  return { raw, low, digits };
+}
+function uniqueByBarcode(list){
+  const seen = new Set();
+  const out = [];
+  for(const r of list){
+    const b = (r.Barcode || "").toString();
+    if(!b || seen.has(b)) continue;
+    seen.add(b);
+    out.push(r);
+  }
+  return out;
+}
+function findMatches(input, limit=20){
+  const { raw, low, digits } = normalize(input);
+  if(!raw) return [];
+
+  const exact = byBarcode.get(raw) || byBarcode.get(digits);
+  if(exact) return [exact];
+
+  const out = [];
+  if(digits.length >= 4){
+    for(const r of rows){
+      if(r._noBarcode) continue;
+      const b = (r.Barcode || "").toString().replace(/\D+/g,'');
+      if(!b) continue;
+      if(digits.includes(b) || digits.startsWith(b) || b.startsWith(digits)) out.push(r);
+      if(out.length >= limit) break;
+    }
+    if(out.length) return uniqueByBarcode(out);
+  }
+
+  if(low.length >= 2){
+    for(const r of rows){
+      const d = (r.Description || "").toLowerCase();
+      if(d.includes(low)) out.push(r);
+      if(out.length >= limit) break;
+    }
+  }
+  return uniqueByBarcode(out);
+}
+
+/* =============================
+   CLIENT SELECT
+============================= */
+function renderClientSelect(){
+  clientSelect.innerHTML = "";
+
+  const opt0 = document.createElement("option");
+  opt0.value = "WALKIN";
+  opt0.textContent = "Walk-in (No Client)";
+  clientSelect.appendChild(opt0);
+
+  for(const c of clients){
+    const opt = document.createElement("option");
+    opt.value = c.clientId;
+    const g = c.group ? ` • ${c.group}` : "";
+    opt.textContent = `${c.clientName} • ${c.clientId}${g}`;
+    clientSelect.appendChild(opt);
+  }
+
+  if(selectedClientId && clientSelect.querySelector(`option[value="${cssEscape(selectedClientId)}"]`)){
+    clientSelect.value = selectedClientId;
+  }else{
+    selectedClientId = "WALKIN";
+    clientSelect.value = "WALKIN";
+  }
+
+  updateClientHintAndMode();
+}
+function getSelectedClient(){
+  if(selectedClientId === "WALKIN") return null;
+  return clients.find(c=>c.clientId === selectedClientId) || null;
+}
+function updateClientHintAndMode(){
+  const c = getSelectedClient();
+  if(!c){
+    clientHint.textContent = clients.length ? `Loaded clients: ${clients.length}` : `No clients loaded (optional).`;
+    return;
+  }
+  clientHint.textContent = `${c.group ? ("Group: " + c.group + " • ") : ""}Default: ${c.defaultMode}`;
+  setPriceMode(c.defaultMode);
+}
+clientSelect.addEventListener("change", ()=>{
+  selectedClientId = clientSelect.value;
+  const c = getSelectedClient();
+  chkCustomer.value = c ? c.clientName : "Walk-in";
+  updateClientHintAndMode();
+  showToast(c ? `Client: ${c.clientName}` : "Client: Walk-in");
+});
+
+/* =============================
+   QTY SHEET
+============================= */
+let pendingAdd = null;
+function openQtyPicker(row, suggestedQty=1){
+  pendingAdd = { row };
+  qtyItemTitle.textContent = `${row.Description || "(No name)"} • ${row._noBarcode ? "NO-BARCODE" : ("Barcode: " + row.Barcode)}`;
+  qtyPick.value = String(Math.max(1, Math.floor(Number(suggestedQty)||1)));
+  qtySheet.classList.add("show");
+  setTimeout(()=>qtyPick.focus(), 120);
+}
+function closeQtyPicker(){
+  qtySheet.classList.remove("show");
+  pendingAdd = null;
+}
+document.querySelectorAll('#qtySheet [data-q]').forEach(b=>{
+  b.addEventListener("click", ()=> qtyPick.value = b.getAttribute("data-q"));
+});
+btnQtyCancel.onclick = closeQtyPicker;
+btnQtyAdd.onclick = ()=>{
+  if(!pendingAdd) return closeQtyPicker();
+  const q = Math.max(1, Math.floor(Number(qtyPick.value)||1));
+  addRowToCart(pendingAdd.row, q);
+  closeQtyPicker();
+};
+
+/* =============================
+   CART
+============================= */
+function addRowToCart(row, addQty){
+  const key = row.Barcode;
+  const qty = Math.max(1, Math.floor(Number(addQty)||1));
+  const existing = cart.get(key) || { row, qty:0 };
+  existing.qty += qty;
+  cart.set(key, existing);
+  lastAction = { type:"add", barcode:key, qty };
+  renderCart();
+  showToast(`${row.Description || "Item"} +${qty} (Qty: ${existing.qty})`);
+}
+function setQty(barcode, newQty){
+  const item = cart.get(barcode);
+  if(!item) return;
+  const q = Math.max(0, Math.floor(Number(newQty) || 0));
+  if(q <= 0) cart.delete(barcode);
+  else item.qty = q;
+  renderCart();
+}
+function removeItem(barcode){
+  const it = cart.get(barcode);
+  if(!it) return;
+  lastAction = { type:"remove", barcode, prevQty: it.qty };
+  cart.delete(barcode);
+  renderCart();
+}
+function undoLast(){
+  if(!lastAction) return showToast("Nothing to undo");
+  const a = lastAction;
+  lastAction = null;
+
+  if(a.type === "add"){
+    const it = cart.get(a.barcode);
+    if(!it) return;
+    const newQty = it.qty - a.qty;
+    if(newQty <= 0) cart.delete(a.barcode);
+    else it.qty = newQty;
+    renderCart();
+    showToast("Undo ✅");
+    return;
+  }
+  if(a.type === "remove"){
+    const row = byBarcode.get(a.barcode);
+    if(!row) return;
+    cart.set(a.barcode, { row, qty: a.prevQty });
+    renderCart();
+    showToast("Undo ✅");
+    return;
+  }
+  showToast("Undo ✅");
+}
+
+/* totals */
+function computeSubTotal(){
+  let sub = 0;
+  for(const [, item] of cart.entries()){
+    const price = Number(item.row[priceMode]) || 0;
+    sub += price * item.qty;
+  }
+  return sub;
+}
+function computeDiscount(subTotal){
+  if(disc.type === "percent"){
+    const v = Math.max(0, Number(disc.value) || 0);
+    return subTotal * (v / 100);
+  }
+  if(disc.type === "fixed"){
+    const v = Math.max(0, Number(disc.value) || 0);
+    return Math.min(v, subTotal);
+  }
+  return 0;
+}
+function computeVatAmount(amountAfterDisc){
+  const rate = Math.max(0, Number(vat.rate) || 0) / 100;
+  if(vat.mode === "add") return amountAfterDisc * rate;
+  if(vat.mode === "included"){
+    if(rate <= 0) return 0;
+    return amountAfterDisc - (amountAfterDisc / (1 + rate));
+  }
+  return 0;
+}
+function computePayable(){
+  const sub = computeSubTotal();
+  const discAmt = computeDiscount(sub);
+  const after = Math.max(0, sub - discAmt);
+  const vatAmt = computeVatAmount(after);
+  const payable = (vat.mode === "add") ? (after + vatAmt) : after;
+  return { sub, discAmt, after, vatAmt, payable };
+}
+function updatePosMeta(){
+  const c = getSelectedClient();
+  const clientStr = c ? `Client: ${c.clientName} (${c.clientId})${c.group ? " • " + c.group : ""}` : `Client: Walk-in`;
+  const discStr = (disc.type==="none") ? "No discount" :
+    (disc.type==="percent") ? `Discount: ${Number(disc.value||0)}%` :
+    `Discount: ₱ ${Number(disc.value||0).toFixed(2)}`;
+  const vatStr = vat.mode==="off" ? "VAT: Off" :
+    vat.mode==="add" ? `VAT: Add ${Number(vat.rate||0)}%` :
+    `VAT: Included ${Number(vat.rate||0)}%`;
+  posMeta.textContent = `${clientStr} • ${discStr} • ${vatStr} • Mode: ${priceMode}`;
+}
+
+function renderCart(){
+  const c = computePayable();
+  cartBody.innerHTML = "";
+
+  for(const [barcode, item] of cart.entries()){
+    const price = Number(item.row[priceMode]) || 0;
+    const rowTotal = price * item.qty;
+    const shownBarcode = item.row._noBarcode ? "NO-BARCODE" : (item.row.Barcode || "");
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div class="itemTitle">${esc(item.row.Description||'')}</div>
+        <div class="subline">Barcode: <span class="mono">${esc(shownBarcode)}</span></div>
+      </td>
+      <td class="mono">${esc(shownBarcode)}</td>
+      <td class="right">${price.toFixed(2)}</td>
+      <td class="right">
+        <div class="qtyCtl">
+          <button data-dec="${escAttr(barcode)}" type="button">−</button>
+          <span class="qtyTap" data-edit="${escAttr(barcode)}">${item.qty}</span>
+          <button data-inc="${escAttr(barcode)}" type="button">+</button>
+        </div>
+      </td>
+      <td class="right">${rowTotal.toFixed(2)}</td>
+      <td class="right"><button class="btn small danger" data-del="${escAttr(barcode)}" type="button">X</button></td>
+    `;
+    cartBody.appendChild(tr);
+  }
+
+  grandTotalEl.textContent = c.payable.toFixed(2);
+  cartCountEl.textContent = String(cart.size);
+  updatePosMeta();
+
+  cartBody.querySelectorAll("button[data-del]").forEach(btn=>{
+    btn.onclick = ()=>removeItem(btn.getAttribute("data-del"));
+  });
+  cartBody.querySelectorAll("button[data-inc]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const b = btn.getAttribute("data-inc");
+      const it = cart.get(b);
+      if(it) openQtyPicker(it.row, 1);
+    };
+  });
+  cartBody.querySelectorAll("button[data-dec]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const b = btn.getAttribute("data-dec");
+      const it = cart.get(b);
+      if(it) setQty(b, it.qty-1);
+    };
+  });
+  cartBody.querySelectorAll("[data-edit]").forEach(el=>{
+    el.onclick = ()=>{
+      const b = el.getAttribute("data-edit");
+      const it = cart.get(b);
+      if(!it) return;
+      const nv = prompt("Set quantity:", String(it.qty));
+      if(nv === null) return;
+      setQty(b, nv);
+    };
+  });
+
+  if(checkoutSheet.classList.contains("show")) refreshCheckout();
+}
+
+/* =============================
+   RESULTS UI
+============================= */
+function showResults(matches){
+  resultsBox.style.display = "block";
+  resultsBox.innerHTML = matches.map(r=>{
+    const b = r._noBarcode ? "NO-BARCODE" : (r.Barcode || "");
+    return `
+      <div class="resItem" data-b="${escAttr(r.Barcode||'')}">
+        <div>
+          <div class="resTitle">${esc(r.Description||'(No Description)')}</div>
+          <div class="resMeta">Barcode: <span class="mono">${esc(b)}</span></div>
+        </div>
+        <div class="resPrice">
+          R ₱${Number(r.Retail||0).toFixed(2)}<br>
+          W ₱${Number(r.Wholesale||0).toFixed(2)}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  resultsBox.querySelectorAll(".resItem").forEach(el=>{
+    el.onclick = ()=>{
+      const b = el.getAttribute("data-b");
+      const row = byBarcode.get(b);
+      if(row) openQtyPicker(row, Number(qtyInputEl.value||1));
+      hideResults();
+      codeInputEl.value = "";
+      codeInputEl.focus();
+    };
+  });
+}
+function hideResults(){ resultsBox.style.display = "none"; resultsBox.innerHTML = ""; }
+
+/* =============================
+   INPUT FLOW
+============================= */
+function addFromInput(){
+  if(rows.length === 0) return alert("Load products first (Excel or Saved).");
+  const v = codeInputEl.value.trim();
+  if(!v) return;
+
+  const digits = v.replace(/\D+/g,'');
+  const looksBarcode = digits.length >= 6 && (digits.length / Math.max(v.length,1)) > 0.75;
+  if(looksBarcode && !isBarcodeAllowed(digits)){
+    showToast("Barcode not allowed by lock");
+    return;
+  }
+
+  const matches = findMatches(v, 20);
+  if(!matches.length) return alert("No match found.");
+  if(matches.length === 1){
+    openQtyPicker(matches[0], Number(qtyInputEl.value||1));
+    hideResults();
+    codeInputEl.value = "";
+    codeInputEl.focus();
+  } else {
+    showResults(matches);
+  }
+}
+document.getElementById("addBtn").onclick = addFromInput;
+
+codeInputEl.addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") addFromInput();
+  if(e.key === "Escape") hideResults();
+});
+
+let autoAddLock = false;
+let autoAddTimer = null;
+codeInputEl.addEventListener("input", ()=>{
+  const v = codeInputEl.value.trim();
+  if(!v){ hideResults(); autoAddLock=false; return; }
+
+  const digits = v.replace(/\D+/g,'');
+  const looksBarcode = digits.length >= 6 && (digits.length / Math.max(v.length,1)) > 0.75;
+
+  clearTimeout(autoAddTimer);
+  autoAddTimer = setTimeout(()=>{
+    if(autoAddLock) return;
+
+    if(looksBarcode && !isBarcodeAllowed(digits)){
+      hideResults();
+      return;
+    }
+
+    const matches = findMatches(v, 20);
+    if(!matches.length){ hideResults(); return; }
+
+    if(looksBarcode && matches.length === 1){
+      autoAddLock = true;
+      openQtyPicker(matches[0], Number(qtyInputEl.value||1));
+      codeInputEl.value = "";
+      hideResults();
+      setTimeout(()=> autoAddLock=false, 220);
+      return;
+    }
+
+    if(matches.length >= 2) showResults(matches);
+    else hideResults();
+  }, looksBarcode ? 60 : 180);
+});
+
+document.getElementById("clearBtn").onclick = ()=>{
+  cart.clear();
+  lastAction = null;
+  renderCart();
+  showToast("Cart cleared");
+};
+document.getElementById("undoBtn").onclick = undoLast;
+
+/* =============================
+   NO BARCODE ITEM (manual)
+============================= */
+function openNoBarcode(){
+  nbName.value = "";
+  nbPrice.value = "";
+  nbQty.value = "1";
+  noBarcodeSheet.classList.add("show");
+  setTimeout(()=>nbName.focus(), 120);
+}
+function closeNoBarcode(){ noBarcodeSheet.classList.remove("show"); }
+document.getElementById("noBarcodeBtn").onclick = openNoBarcode;
+btnNbClose.onclick = closeNoBarcode;
+
+btnNbAdd.onclick = ()=>{
+  const name = (nbName.value || "").trim();
+  const price = Number(nbPrice.value || 0) || 0;
+  const qty = Math.max(1, Math.floor(Number(nbQty.value)||1));
+  if(!name) return alert("Enter item name.");
+  if(price < 0) return alert("Invalid price.");
+
+  const row = {
+    Description: name,
+    Barcode: `NBMAN-${hash(name + "|" + Date.now())}`,
+    Retail: price,
+    Wholesale: price,
+    _noBarcode: true,
+    _manual: true
+  };
+  addRowToCart(row, qty);
+  closeNoBarcode();
+  showToast("No-barcode item added ✅");
+};
+
+/* =============================
+   HOLD / RESUME
+============================= */
+document.getElementById("holdBtn").onclick = ()=>{
+  if(cart.size === 0) return showToast("Cart is empty");
+  const payload = Array.from(cart.entries()).map(([b, it]) => ({
+    b, q: it.qty,
+    row: it.row._manual ? it.row : null
+  }));
+  localStorage.setItem(KEY_HOLD, JSON.stringify(payload));
+  showToast("Sale held ✅");
+};
+document.getElementById("resumeBtn").onclick = ()=>{
+  const raw = localStorage.getItem(KEY_HOLD);
+  if(!raw) return showToast("No held sale");
+  try{
+    const arr = JSON.parse(raw);
+    cart.clear();
+    for(const x of arr){
+      let row = byBarcode.get(x.b);
+      if(!row && x.row) row = x.row;
+      if(row) cart.set(x.b, { row, qty: Math.max(1, Math.floor(Number(x.q)||1)) });
+    }
+    renderCart();
+    showToast("Resumed ✅");
+  }catch{
+    showToast("Hold data invalid");
+  }
+};
+
+/* =============================
+   DISCOUNT/VAT
+============================= */
+function openDiscount(){
+  discTypeEl.value = disc.type;
+  discValueEl.value = String(disc.value || 0);
+  vatModeEl.value = vat.mode;
+  vatRateEl.value = String(vat.rate ?? 12);
+  updateDiscPreview();
+  discountSheet.classList.add("show");
+}
+function closeDiscount(){ discountSheet.classList.remove("show"); }
+function updateDiscPreview(){
+  const sub = computeSubTotal();
+  const d = computeDiscount(sub);
+  const after = Math.max(0, sub - d);
+  const vr = Math.max(0, Number(vatRateEl.value) || 0);
+  const vm = vatModeEl.value;
+  const vatAmt = (vm==="add") ? after*(vr/100) : (vm==="included" && vr>0) ? after - (after/(1+vr/100)) : 0;
+  const pay = (vm==="add") ? (after + vatAmt) : after;
+  discPreview.textContent = `Sub: ₱ ${sub.toFixed(2)} • Disc: ₱ ${d.toFixed(2)} • VAT: ₱ ${vatAmt.toFixed(2)} • Payable: ₱ ${pay.toFixed(2)}`;
+}
+discTypeEl.addEventListener("change", updateDiscPreview);
+discValueEl.addEventListener("input", updateDiscPreview);
+vatModeEl.addEventListener("change", updateDiscPreview);
+vatRateEl.addEventListener("input", updateDiscPreview);
+
+document.getElementById("discountBtn").onclick = openDiscount;
+document.getElementById("btnCloseDisc").onclick = closeDiscount;
+document.getElementById("btnResetDisc").onclick = ()=>{
+  disc = { type:"none", value:0 };
+  vat  = { mode:"off", rate:12 };
+  renderCart();
+  showToast("Reset ✅");
+  updateDiscPreview();
+};
+document.getElementById("btnApplyDisc").onclick = ()=>{
+  disc = { type: discTypeEl.value, value: Number(discValueEl.value||0) || 0 };
+  vat  = { mode: vatModeEl.value, rate: Number(vatRateEl.value||0) || 0 };
+  renderCart();
+  closeDiscount();
+  showToast("Applied ✅");
+};
+
+/* =============================
+   PRODUCTS TAB
+============================= */
+function renderProductsOnce(){
+  if(productsRendered) return;
+  productsRendered = true;
+  drawProducts(rows);
+}
+function drawProducts(list){
+  productTbody.innerHTML = "";
+  const frag = document.createDocumentFragment();
+  for(const r of list){
+    const tr = document.createElement("tr");
+    const b = r._noBarcode ? "NO-BARCODE" : (r.Barcode || "");
+    tr.innerHTML = `
+      <td><div class="itemTitle">${esc(r.Description||"")}</div></td>
+      <td class="mono">${esc(b)}</td>
+      <td class="right">${Number(r.Retail||0).toFixed(2)}</td>
+      <td class="right">${Number(r.Wholesale||0).toFixed(2)}</td>
+    `;
+    tr.style.cursor = "pointer";
+    tr.onclick = ()=>{
+      showView("pos");
+      openQtyPicker(r, Number(qtyInputEl.value||1));
+    };
+    frag.appendChild(tr);
+  }
+  productTbody.appendChild(frag);
+}
+productFilter.addEventListener("input", ()=>{
+  const q = productFilter.value.trim();
+  if(!q){ drawProducts(rows); return; }
+  const m = findMatches(q, 600);
+  drawProducts(m);
+});
+
+/* =============================
+   CLIENTS TAB (UPDATED)
+============================= */
+function renderClientsOnce(){
+  if(clientsRendered) return;
+  clientsRendered = true;
+  renderClients();
+}
+function renderClients(listOverride=null){
+  const list = listOverride || clients;
+  clientTbody.innerHTML = "";
+  clientCountChip.textContent = `${clients.length} clients`;
+
+  const frag = document.createDocumentFragment();
+  for(const c of list){
+    const tr = document.createElement("tr");
+    tr.style.cursor = "pointer";
+    tr.innerHTML = `
+      <td>
+        <div class="itemTitle">${esc(c.clientName)}</div>
+        <div class="subline">${esc(c.group || "")}</div>
+      </td>
+      <td class="mono">${esc(c.clientId)}</td>
+      <td>${esc(c.group || "")}</td>
+      <td class="right">${esc(c.defaultMode)}</td>
+    `;
+    tr.onclick = ()=>{
+      selectedClientId = c.clientId;
+      renderClientSelect();
+      chkCustomer.value = c.clientName;
+      showView("pos");
+      showToast(`Client selected: ${c.clientName}`);
+    };
+    frag.appendChild(tr);
+  }
+  clientTbody.appendChild(frag);
+}
+clientFilter.addEventListener("input", ()=>{
+  const q = (clientFilter.value || "").trim().toLowerCase();
+  if(!q){ renderClients(clients); return; }
+  const filtered = clients.filter(c=>{
+    return (c.clientName||"").toLowerCase().includes(q)
+        || (c.clientId||"").toLowerCase().includes(q)
+        || (c.group||"").toLowerCase().includes(q);
+  });
+  renderClients(filtered);
+});
+
+/* =============================
+   EXPORTS (CSV)
+============================= */
+function todayStr(){
+  const d = new Date();
+  const pad = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function downloadText(filename, text){
+  const blob = new Blob([text], { type:"text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 500);
+}
+function csvEscape(v){
+  const s = String(v ?? "");
+  if(/[,"\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
+function exportProductsCSV(){
+  if(rows.length === 0) return alert("No products.");
+  const header = ["Barcode","Description","Retail","Wholesale","NoBarcode"];
+  const lines = [header.join(",")];
+  for(const r of rows){
+    lines.push([
+      csvEscape(r._noBarcode ? "" : r.Barcode),
+      csvEscape(r.Description),
+      Number(r.Retail||0).toFixed(2),
+      Number(r.Wholesale||0).toFixed(2),
+      r._noBarcode ? "YES" : "NO"
+    ].join(","));
+  }
+  downloadText(`products_${todayStr()}.csv`, lines.join("\n"));
+}
+document.getElementById("btnExportProducts").onclick = exportProductsCSV;
+
+document.getElementById("btnExportClients").onclick = ()=>{
+  if(!clients.length) return alert("No clients.");
+  const header = ["ClientID","ClientName","GeographicalGroup","DefaultMode"];
+  const lines = [header.join(",")];
+  for(const c of clients){
+    lines.push([
+      csvEscape(c.clientId),
+      csvEscape(c.clientName),
+      csvEscape(c.group || ""),
+      csvEscape(c.defaultMode)
+    ].join(","));
+  }
+  downloadText(`clients_${todayStr()}.csv`, lines.join("\n"));
+};
+
+/* =============================
+   SALES / RECEIPT
+============================= */
+function formatDT(d){
+  const pad = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function loadSales(){
+  try{ return JSON.parse(localStorage.getItem(KEY_SALES) || "[]"); }
+  catch{ return []; }
+}
+function saveSales(list){
+  localStorage.setItem(KEY_SALES, JSON.stringify(list.slice(0,50)));
+}
+function buildSaleFromCart(){
+  const c = computePayable();
+  const cash = Number(chkCash.value || 0);
+  const change = cash - c.payable;
+
+  const items = [];
+  for(const [barcode, it] of cart.entries()){
+    const price = Number(it.row[priceMode]) || 0;
+    const line = price * it.qty;
+    const shownBarcode = it.row._noBarcode ? "NO-BARCODE" : barcode;
+    items.push({ barcode: shownBarcode, desc: it.row.Description || "", qty: it.qty, price, line });
+  }
+
+  const dt = new Date();
+  const selClient = getSelectedClient();
+  const clientMeta = selClient
+    ? { clientId: selClient.clientId, clientName: selClient.clientName, group: selClient.group || "" }
+    : { clientId:"", clientName:"Walk-in", group:"" };
+
+  return {
+    id: String(dt.getTime()),
+    dt: formatDT(dt),
+    clientId: clientMeta.clientId,
+    clientName: clientMeta.clientName,
+    clientGroup: clientMeta.group,
+    customer: (chkCustomer.value || clientMeta.clientName || "Walk-in").trim(),
+    notes: (chkNotes.value || "").trim(),
+    mode: priceMode,
+    subTotal: c.sub,
+    discountType: disc.type,
+    discountValue: disc.value,
+    discountAmount: c.discAmt,
+    vatMode: vat.mode,
+    vatRate: vat.rate,
+    vatAmount: c.vatAmt,
+    payable: c.payable,
+    cash,
+    change,
+    items,
+    store: { ...settings }
+  };
+}
+function buildReceiptHTML(sale){
+  const s = sale.store || settings;
+  const lines = [];
+  lines.push(`<div class="rTitle">${esc(s.storeName || "STORE")}</div>`);
+  if(s.storeAddress) lines.push(`<div class="rSub">${esc(s.storeAddress)}</div>`);
+  if(s.storeContact) lines.push(`<div class="rSub">${esc(s.storeContact)}</div>`);
+  lines.push(`<div class="rLine"><span>Date</span><span>${esc(sale.dt)}</span></div>`);
+  lines.push(`<div class="rLine"><span>Client</span><span>${esc(sale.clientName || "Walk-in")}</span></div>`);
+  if(sale.clientId) lines.push(`<div class="rLine"><span>Client ID</span><span>${esc(sale.clientId)}</span></div>`);
+  if(sale.clientGroup) lines.push(`<div class="rLine"><span>Group</span><span>${esc(sale.clientGroup)}</span></div>`);
+  lines.push(`<div class="rLine"><span>Mode</span><span>${esc(sale.mode)}</span></div>`);
+  lines.push(`<div class="rLine"><span>Receipt #</span><span>${esc(sale.id)}</span></div>`);
+  lines.push(`<hr/>`);
+
+  lines.push(`
+    <table>
+      <tr>
+        <td style="font-weight:900">ITEM</td>
+        <td class="right" style="font-weight:900">QTYxPRICE</td>
+        <td class="right" style="font-weight:900">TOTAL</td>
+      </tr>
+      ${sale.items.map(it=>{
+        return `
+          <tr>
+            <td>
+              ${esc(it.desc)}
+              <div class="bc">BARCODE: ${esc(it.barcode)}</div>
+            </td>
+            <td class="right">${it.qty}x${it.price.toFixed(2)}</td>
+            <td class="right">${it.line.toFixed(2)}</td>
+          </tr>
+        `;
+      }).join("")}
+    </table>
+  `);
+
+  lines.push(`<hr/>`);
+  lines.push(`<div class="rLine"><span>SUBTOTAL</span><span>${Number(sale.subTotal||0).toFixed(2)}</span></div>`);
+  if(Number(sale.discountAmount||0) > 0){
+    const dLabel = sale.discountType === "percent"
+      ? `${Number(sale.discountValue||0)}%`
+      : `₱${Number(sale.discountValue||0).toFixed(2)}`;
+    lines.push(`<div class="rLine"><span>DISCOUNT (${esc(dLabel)})</span><span>- ${Number(sale.discountAmount||0).toFixed(2)}</span></div>`);
+  }
+  if(sale.vatMode === "add"){
+    lines.push(`<div class="rLine"><span>VAT (${Number(sale.vatRate||0)}%)</span><span>${Number(sale.vatAmount||0).toFixed(2)}</span></div>`);
+  }else if(sale.vatMode === "included"){
+    lines.push(`<div class="rLine"><span>VAT INCLUDED</span><span>${Number(sale.vatAmount||0).toFixed(2)}</span></div>`);
+  }
+  lines.push(`<div class="rLine"><span>TOTAL</span><span>${Number(sale.payable||0).toFixed(2)}</span></div>`);
+  lines.push(`<div class="rLine"><span>CASH</span><span>${Number(sale.cash||0).toFixed(2)}</span></div>`);
+  lines.push(`<div class="rLine"><span>CHANGE</span><span>${Number(sale.change||0).toFixed(2)}</span></div>`);
+  if(sale.notes) lines.push(`<hr/><div class="rSub">Notes: ${esc(sale.notes)}</div>`);
+  lines.push(`<hr/>`);
+  lines.push(`<div style="font-size:12px;text-align:center">${esc((s.footer || "THANK YOU!").replace(/\n/g," "))}</div>`);
+  return lines.join("");
+}
+
+/* =============================
+   CHECKOUT
+============================= */
+function refreshCheckout(){
+  const c = computePayable();
+  chkTotal.value = `₱ ${c.payable.toFixed(2)}`;
+  const cash = Number(chkCash.value || 0);
+  chkChange.value = `₱ ${(cash - c.payable).toFixed(2)}`;
+}
+chkCash.addEventListener("input", refreshCheckout);
+
+function openCheckout(){
+  if(cart.size === 0) return showToast("Cart is empty");
+  refreshCheckout();
+
+  const selClient = getSelectedClient();
+  chkCustomer.value = selClient ? selClient.clientName : (chkCustomer.value || "Walk-in");
+
+  chkNotes.value = "";
+  checkoutSheet.classList.add("show");
+  setTimeout(()=>chkCash.focus(), 120);
+}
+function closeCheckout(){ checkoutSheet.classList.remove("show"); }
+document.getElementById("checkoutBtn").onclick = openCheckout;
+document.getElementById("btnCloseCheckout").onclick = closeCheckout;
+
+document.getElementById("btnPrint").onclick = ()=>{
+  if(cart.size === 0) return alert("Cart is empty.");
+  const sale = buildSaleFromCart();
+  const pr = document.getElementById("printReceipt");
+  pr.innerHTML = buildReceiptHTML(sale);
+  window.print();
+};
+
+document.getElementById("btnCompleteSale").onclick = ()=>{
+  const sale = buildSaleFromCart();
+  if(sale.cash < sale.payable) return alert("Cash is not enough.");
+
+  const sales = loadSales();
+  sales.unshift(sale);
+  saveSales(sales);
+
+  cart.clear();
+  lastAction = null;
+  renderCart();
+  closeCheckout();
+  showToast("Sale saved ✅");
+  renderSales();
+  showView("reports");
+};
+
+/* =============================
+   SALES LIST + EXPORT
+============================= */
+function renderSales(){
+  const sales = loadSales();
+  if(!sales.length){
+    salesList.innerHTML = `
+      <div class="resItem">
+        <div>
+          <div class="resTitle">No sales yet</div>
+          <div class="resMeta">Complete a checkout to save receipts.</div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  salesList.innerHTML = sales.slice(0,20).map(s=>`
+    <div class="resItem">
+      <div>
+        <div class="resTitle">₱ ${Number(s.payable||0).toFixed(2)} • ${esc(s.clientName || s.customer || "Walk-in")}</div>
+        <div class="resMeta">${esc(s.dt)} • ${esc(s.mode)} • Items: ${s.items?.length||0}</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn small secondary" data-print="${escAttr(s.id)}" type="button">Print</button>
+      </div>
+    </div>
+  `).join("");
+
+  salesList.querySelectorAll("button[data-print]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute("data-print");
+      const sale = loadSales().find(x=>String(x.id)===String(id));
+      if(!sale) return;
+      const pr = document.getElementById("printReceipt");
+      pr.innerHTML = buildReceiptHTML(sale);
+      window.print();
+    };
+  });
+}
+function exportSalesCSV(filterDate=null){
+  const sales = loadSales();
+  if(!sales.length) return alert("No sales.");
+  const header = [
+    "ReceiptID","DateTime","ClientID","ClientName","ClientGroup","Mode",
+    "SubTotal","DiscountType","DiscountValue","DiscountAmount",
+    "VATMode","VATRate","VATAmount","Payable","Cash","Change",
+    "ItemsCount","Notes"
+  ];
+  const lines = [header.join(",")];
+
+  for(const s of sales){
+    if(filterDate){
+      const day = String(s.dt||"").slice(0,10);
+      if(day !== filterDate) continue;
+    }
+    lines.push([
+      csvEscape(s.id),
+      csvEscape(s.dt),
+      csvEscape(s.clientId || ""),
+      csvEscape(s.clientName || ""),
+      csvEscape(s.clientGroup || ""),
+      csvEscape(s.mode),
+      Number(s.subTotal||0).toFixed(2),
+      csvEscape(s.discountType||"none"),
+      csvEscape(s.discountValue??0),
+      Number(s.discountAmount||0).toFixed(2),
+      csvEscape(s.vatMode||"off"),
+      csvEscape(s.vatRate??0),
+      Number(s.vatAmount||0).toFixed(2),
+      Number(s.payable||0).toFixed(2),
+      Number(s.cash||0).toFixed(2),
+      Number(s.change||0).toFixed(2),
+      csvEscape((s.items?.length||0)),
+      csvEscape(s.notes||"")
+    ].join(","));
+  }
+  const name = filterDate ? `sales_${filterDate}.csv` : `sales_all_${todayStr()}.csv`;
+  downloadText(name, lines.join("\n"));
+}
+document.getElementById("btnExportSales").onclick = ()=>exportSalesCSV(null);
+document.getElementById("btnExportSalesDaily").onclick = ()=>exportSalesCSV(todayStr());
+document.getElementById("btnClearSales").onclick = ()=>{
+  if(!confirm("Clear sales history on this phone?")) return;
+  localStorage.removeItem(KEY_SALES);
+  renderSales();
+  showToast("Sales cleared");
+};
+
+/* =============================
+   SCANNER
+============================= */
+document.getElementById("btnOpenScanner").onclick  = startScanner;
+document.getElementById("btnOpenScanner2").onclick = startScanner;
+
+const html5Qr = new Html5Qrcode("reader");
+const scanConfig = { fps: 12, qrbox: { width: 340, height: 220 } };
+let scannerRunning = false;
+let torchOn = false;
+let lastScanValue = "";
+let lastScanTime = 0;
+const SCAN_LOCK_MS = 900;
+
+async function startScanner(){
+  if(scannerRunning) return;
+  if(rows.length === 0){
+    alert("Load products first.");
+    return;
+  }
+
+  scanModal.classList.add("show");
+  torchOn = false;
+  btnTorch.textContent = "🔦 Torch";
+
+  try{
+    scannerRunning = true;
+    await html5Qr.start(
+      { facingMode: "environment" },
+      scanConfig,
+      (decodedText)=>{
+        const now = Date.now();
+        const val = String(decodedText || "").trim();
+        if(!val) return;
+
+        if(val === lastScanValue && (now - lastScanTime) < SCAN_LOCK_MS) return;
+        lastScanValue = val;
+        lastScanTime = now;
+
+        const digits = val.replace(/\D+/g,'');
+        if(digits.length >= 6 && !isBarcodeAllowed(digits)){
+          showToast("Barcode blocked by lock");
+          return;
+        }
+
+        const matches = findMatches(val, 20);
+        if(!matches.length){
+          showToast("No match (search by name or use No-Barcode)");
+          return;
+        }
+
+        beep(); buzz();
+        showView("pos");
+        if(matches.length === 1){
+          openQtyPicker(matches[0], Number(qtyInputEl.value||1));
+          if(settings.scanMode === "single") stopScanner();
+        } else {
+          showResults(matches);
+          if(settings.scanMode === "single") stopScanner();
+        }
+      },
+      ()=>{}
+    );
+  }catch{
+    scannerRunning = false;
+    alert("Camera error / permission denied. Allow camera access in browser settings.");
+    scanModal.classList.remove("show");
+  }
+}
+async function stopScanner(){
+  if(!scannerRunning){
+    scanModal.classList.remove("show");
+    return;
+  }
+  try{
+    await html5Qr.stop();
+    await html5Qr.clear();
+  }catch{}
+  scannerRunning = false;
+  scanModal.classList.remove("show");
+}
+btnCloseScan.onclick = stopScanner;
+
+btnTorch.onclick = async ()=>{
+  if(!scannerRunning) return;
+  try{
+    await html5Qr.applyVideoConstraints({ advanced: [{ torch: !torchOn }] });
+    torchOn = !torchOn;
+    btnTorch.textContent = torchOn ? "💡 Torch ON" : "🔦 Torch";
+  }catch{
+    alert("Torch not supported on this device/browser.");
+  }
+};
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) stopScanner(); });
+
+/* =============================
+   BUTTONS NOT YET WIRED (minor)
+============================= */
+document.getElementById("btnSaveProducts").onclick = saveProductsOffline;
+document.getElementById("btnLoadSaved").onclick = loadSavedProducts;
+
+/* =============================
+   STARTUP
+============================= */
+loadSettings();
+renderCart();
+renderSales();
+updateOnlineBadge();
+updatePosMeta();
+
+if(localStorage.getItem(KEY_PRODUCTS)){
+  try{
+    const list = JSON.parse(localStorage.getItem(KEY_PRODUCTS) || "[]");
+    if(Array.isArray(list) && list.length){
+      loadProductsFromArray(list, false);
+      showToast("Loaded saved products ✅");
+    }
+  }catch{}
+}
+
+if(localStorage.getItem(KEY_CLIENTS)){
+  try{
+    const list = JSON.parse(localStorage.getItem(KEY_CLIENTS) || "[]");
+    if(Array.isArray(list) && list.length){
+      loadClientsFromArray(list);
+      showToast("Loaded saved clients ✅");
+    }else{
+      renderClientSelect();
+    }
+  }catch{
+    renderClientSelect();
+  }
+}else{
+  renderClientSelect();
+}
+
+/* =============================
+   EXPORT buttons and missing wires
+============================= */
+document.getElementById("btnExportProducts").onclick = exportProductsCSV;
+document.getElementById("btnClearSavedProducts").onclick = clearSavedProducts;
+
+/* =============================
+   HELPERS
+============================= */
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]))}
+function escAttr(s){return String(s??'').replace(/"/g,'&quot;')}
+function cssEscape(s){ return String(s||"").replace(/["\\]/g, "\\$&"); }
+function hash(str){
+  let h = 2166136261;
+  for(let i=0;i<str.length;i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(16);
+}
+</script>
+
+<script>
+/* Offline-ready (single file PWA) */
+(async function enableOfflinePWA(){
+  if (!("serviceWorker" in navigator)) return;
+
+  const manifest = {
+    name: "POS Mobile Pro",
+    short_name: "POS Pro",
+    start_url: "./",
+    display: "standalone",
+    background_color: "#0b1220",
+    theme_color: "#0b1220",
+    icons: [
+      { src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAK0lEQVR4nO3BMQEAAADCoPVPbQ0PoAAAAAAAAAAAAAAAAAAAAAC4G4gAAT9xWfUAAAAASUVORK5CYII=", sizes:"64x64", type:"image/png" }
+    ]
+  };
+  const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+  const manifestURL = URL.createObjectURL(manifestBlob);
+  const link = document.createElement("link");
+  link.rel = "manifest";
+  link.href = manifestURL;
+  document.head.appendChild(link);
+
+  const CDN_URLS = [
+    "https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js",
+    "https://unpkg.com/html5-qrcode"
+  ];
+
+  const swCode = `
+    const CACHE = "pos-pro-cache-v8";
+    const CORE = ["./"];
+    const CDN = ${JSON.stringify(CDN_URLS)};
+    self.addEventListener("install", (e) => {
+      e.waitUntil((async () => {
+        const cache = await caches.open(CACHE);
+        try { await cache.addAll(CORE); } catch(e){}
+        for(const url of CDN){
+          try{ await cache.add(new Request(url, { mode: "no-cors" })); }catch(e){}
+        }
+        self.skipWaiting();
+      })());
+    });
+    self.addEventListener("activate", (e) => {
+      e.waitUntil((async () => {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : Promise.resolve()));
+        self.clients.claim();
+      })());
+    });
+    self.addEventListener("fetch", (e) => {
+      e.respondWith((async () => {
+        const cached = await caches.match(e.request, { ignoreSearch: true });
+        if(cached) return cached;
+        try{
+          const fresh = await fetch(e.request);
+          const cache = await caches.open(CACHE);
+          cache.put(e.request, fresh.clone());
+          return fresh;
+        }catch{
+          return caches.match("./");
+        }
+      })());
+    });
+  `;
+  const swBlob = new Blob([swCode], { type: "text/javascript" });
+  const swURL = URL.createObjectURL(swBlob);
+
+  try{
+    await navigator.serviceWorker.register(swURL, { scope: "./" });
+  }catch(e){
+    // Hosting may block SW; app still works online.
+  }
+})();
+</script>
+</body>
+</html>
